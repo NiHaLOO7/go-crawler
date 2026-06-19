@@ -27,14 +27,20 @@ type CrawlRequest struct {
 	URL     string `json:"url"`
 	Depth   int    `json:"depth"`
 	Workers int    `json:"workers"`
+	Page    int    `json:"page"`
+	PerPage int    `json:"per_page"`
 }
 
 type CrawlResponse struct {
-	URL         string        `json:"url"`
-	Depth       int           `json:"depth"`
-	Workers     int           `json:"workers"`
-	TotalPages  int           `json:"total_pages"`
+	URL         string         `json:"url"`
+	Depth       int            `json:"depth"`
+	Workers     int            `json:"workers"`
+	Page        int            `json:"page"`
+	PerPage     int            `json:"per_page"`
+	TotalResults int           `json:"total_results"`
+	TotalPages  int            `json:"total_pages"`
 	Results     []crawler.Page `json:"results"`
+	Next        string         `json:"next,omitempty"`
 }
 
 var allPosts []Post
@@ -71,16 +77,41 @@ func crawlHandler(w http.ResponseWriter, r *http.Request) {
 	if req.Workers < 1 {
 		req.Workers = 5
 	}
+	if req.Page < 1 {
+		req.Page = 1
+	}
+	if req.PerPage < 1 {
+		req.PerPage = 10
+	}
 
 	c := crawler.NewCrawler(req.Depth, req.Workers)
 	c.Run(req.URL)
 
+	totalResults := len(c.Results)
+	totalPages := (totalResults + req.PerPage - 1) / req.PerPage
+
+	start := (req.Page - 1) * req.PerPage
+	end := start + req.PerPage
+	if start > totalResults {
+		start = totalResults
+	}
+	if end > totalResults {
+		end = totalResults
+	}
+
 	resp := CrawlResponse{
-		URL:        req.URL,
-		Depth:      req.Depth,
-		Workers:    req.Workers,
-		TotalPages: len(c.Results),
-		Results:    c.Results,
+		URL:          req.URL,
+		Depth:        req.Depth,
+		Workers:      req.Workers,
+		Page:         req.Page,
+		PerPage:      req.PerPage,
+		TotalResults: totalResults,
+		TotalPages:   totalPages,
+		Results:      c.Results[start:end],
+	}
+
+	if req.Page < totalPages {
+		resp.Next = fmt.Sprintf("POST /crawl with page: %d", req.Page+1)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
