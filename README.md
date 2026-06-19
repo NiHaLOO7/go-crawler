@@ -72,6 +72,30 @@ main goroutine
 | Map | Track visited URLs |
 | Slice | Collect results |
 
+## Demo
+
+Start the demo server and hit the `/crawl` endpoint with URL, depth, workers, and pagination:
+
+```bash
+go run demo/server.go
+```
+
+```json
+POST http://localhost:8080/crawl
+
+{
+  "url": "https://youtube.com",
+  "depth": 2,
+  "workers": 50,
+  "page": 2,
+  "per_page": 5
+}
+```
+
+![Demo](assets/demo.png)
+
+> Tested with [ApiPad](https://github.com/NiHaLOO7/ApiPad) — an open-source, lightweight API client. Simple, fast, no sign-up required, and always free. Built as a Postman alternative. Contributions welcome!
+
 ## Built With
 
 - Go standard library only (no external dependencies for core logic)
